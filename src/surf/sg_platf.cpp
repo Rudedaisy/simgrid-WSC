@@ -15,6 +15,7 @@
 #include <simgrid/kernel/routing/TorusZone.hpp>
 #include <simgrid/kernel/routing/VivaldiZone.hpp>
 #include <simgrid/kernel/routing/WifiZone.hpp>
+#include <simgrid/kernel/routing/WSCZone.hpp>
 #include <simgrid/s4u/Engine.hpp>
 #include <simgrid/s4u/NetZone.hpp>
 
@@ -525,6 +526,8 @@ sg_platf_create_zone(const simgrid::kernel::routing::ZoneCreationArgs* zone)
     new_zone = simgrid::s4u::create_vivaldi_zone(zone->id);
   } else if (strcasecmp(zone->routing.c_str(), "Wifi") == 0) {
     new_zone = simgrid::s4u::create_wifi_zone(zone->id);
+  } else if (strcasecmp(zone->routing.c_str(), "WSC") == 0) {
+    new_zone = simgrid::s4u::create_wsc_zone(zone->id);
   } else {
     xbt_die("Not a valid model!");
   }

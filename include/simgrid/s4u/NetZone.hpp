@@ -173,6 +173,7 @@ XBT_PUBLIC NetZone* create_empty_zone(const std::string& name);
 XBT_PUBLIC NetZone* create_floyd_zone(const std::string& name);
 XBT_PUBLIC NetZone* create_vivaldi_zone(const std::string& name);
 XBT_PUBLIC NetZone* create_wifi_zone(const std::string& name);
+XBT_PUBLIC NetZone* create_wsc_zone(const std::string& name);
 
 // Extra data structure for complex constructors
 

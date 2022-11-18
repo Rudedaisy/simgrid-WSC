@@ -341,6 +341,7 @@ set(SURF_SRC
   src/kernel/routing/EmptyZone.cpp
   src/kernel/routing/FatTreeZone.cpp
   src/kernel/routing/FloydZone.cpp
+  src/kernel/routing/WSCZone.cpp
   src/kernel/routing/FullZone.cpp
   src/kernel/routing/NetPoint.cpp
   src/kernel/routing/NetZoneImpl.cpp
@@ -716,6 +717,7 @@ set(headers_to_install
   include/simgrid/kernel/routing/EmptyZone.hpp
   include/simgrid/kernel/routing/FatTreeZone.hpp
   include/simgrid/kernel/routing/FloydZone.hpp
+  include/simgrid/kernel/routing/WSCZone.hpp
   include/simgrid/kernel/routing/FullZone.hpp
   include/simgrid/kernel/routing/NetPoint.hpp
   include/simgrid/kernel/routing/NetZoneImpl.hpp

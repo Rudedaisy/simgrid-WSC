@@ -273,6 +273,7 @@ PYBIND11_MODULE(simgrid, m)
       .def_static("create_vivaldi_zone", &simgrid::s4u::create_vivaldi_zone, "Creates a zone of type Vivaldi")
       .def_static("create_empty_zone", &simgrid::s4u::create_empty_zone, "Creates a zone of type Empty")
       .def_static("create_wifi_zone", &simgrid::s4u::create_wifi_zone, "Creates a zone of type Wi-Fi")
+      .def_static("create_wsc_zone", &simgrid::s4u::create_wsc_zone, "Creates a zone of type WSC")
       .def("add_route",
            py::overload_cast<simgrid::kernel::routing::NetPoint*, simgrid::kernel::routing::NetPoint*,
                              simgrid::kernel::routing::NetPoint*, simgrid::kernel::routing::NetPoint*,

@@ -373,6 +373,8 @@ static void on_platform_created()
 {
   currentContainer.clear();
   std::set<std::string, std::less<>> filter;
+  XBT_DEBUG("Sealing nets.");
+  s4u::Engine::get_instance()->get_netzone_root()->seal();
   XBT_DEBUG("Starting graph extraction.");
   recursiveGraphExtraction(s4u::Engine::get_instance()->get_netzone_root(), Container::get_root(), &filter);
   XBT_DEBUG("Graph extraction finished.");
