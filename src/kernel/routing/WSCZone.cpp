@@ -6,12 +6,11 @@
 #include <simgrid/kernel/routing/WSCZone.hpp>
 #include <simgrid/kernel/routing/NetPoint.hpp>
 #include <xbt/string.hpp>
-//#include <iostream>
-#include <cstdlib> // for std::abs()
+#include <iostream>
 //#include <boost/stacktrace.hpp>
 //#include "src/kernel/resource/StandardLinkImpl.hpp"
 #include "src/kernel/resource/NetworkModel.hpp"
-#include <omp.h> // speed up the seal() function
+//#include <omp.h> // speed up the seal() function
 
 #include <climits>
 
@@ -138,7 +137,7 @@ void WSCZone::do_seal()
   if(!dimensions_inferred) {
     wsc_x = contiguous_x;
     wsc_y = (table_size-2) / wsc_x;
-    //std::cout << "Inferred wafer dims " << wsc_x << "x" << wsc_y << std::endl;
+    std::cout << "Inferred wafer dims " << wsc_x << "x" << wsc_y << std::endl;
     dimensions_inferred = true;
   }
 
@@ -154,73 +153,94 @@ void WSCZone::do_seal()
     }
   }
   
-  long int host1_id = 0;
-  long int io_router_id = table_size-1;
-  long int perim_dists[4] = {0}; // used to find which perimeter is closest to dst_pe. Format: [N,S,W,E]
-  long int src_pe;
-  long int dst_pe;
+  unsigned host1_id = 0;
+  unsigned io_router_id = table_size-1;
+  unsigned perim_dists[4] = {0}; // used to find which perimeter is closest to dst_pe. Format: [N,S,W,E]
+  unsigned src_pe = 1;
+  unsigned dst_pe;
+  unsigned temp1;
+  unsigned temp2;
   /* Connect all nodes via predecessor_table_ */
   /* Special nodes: 0=host1, table_size-1=io_router */
-  int direction_x = 1;
-  int direction_y = 1;
+  int direction_y = wsc_x;
   predecessor_table_[0][io_router_id] = 0;
-#pragma omp parallel for collapse(2) num_threads(OPENMP_THREADS) shared(predecessor_table_) private(src_pe,dst_pe,direction_x,direction_y,perim_dists)
-  for (long int src_y = 0; src_y < wsc_y; src_y++) {
-    for (long int src_x = 0; src_x < wsc_x; src_x++) {
-      src_pe = src_y*wsc_x + src_x + 1; // +1 for host1 offset
+  //#pragma omp parallel for collapse(2) num_threads(OPENMP_THREADS) shared(predecessor_table_) private(src_pe,dst_pe,direction_x,direction_y,perim_dists)
+  for (unsigned src_y = 0; src_y < wsc_y; src_y++) {
+    for (unsigned src_x = 0; src_x < wsc_x; src_x++) {
+      dst_pe = src_pe + 1;
       /* First: internal nodes */
-      for (long int dst_y = src_y; dst_y < wsc_y; dst_y++) {
-	direction_y = dst_y==src_y ? 0 : (dst_y-src_y) / std::abs(dst_y-src_y);
-	for (long int dst_x = (dst_y==src_y ? src_x+1 : 0); dst_x < wsc_x; dst_x++) {
-	  dst_pe = dst_y*wsc_x + dst_x + 1; // +1 for host1 offset
-	  direction_x = dst_x==src_x ? 0 : (dst_x-src_x) / std::abs(dst_x-src_x);
+      for (unsigned dst_y = src_y; dst_y < wsc_y; dst_y++) {
+	if (dst_y > src_y) direction_y = wsc_x;
+	else direction_y = -wsc_x;
+	for (unsigned dst_x = (dst_y==src_y ? src_x+1 : 0); dst_x < wsc_x; dst_x++) { // +2 since +1 already routed
 
-	  if (direction_x != 0) {
-	    predecessor_table_[src_pe][dst_pe] = dst_pe - direction_x;
-	    predecessor_table_[dst_pe][src_pe] = src_pe + direction_x;
+	  if (dst_x > src_x) {
+	    predecessor_table_[src_pe][dst_pe] = dst_pe - 1;
+            predecessor_table_[dst_pe][src_pe] = src_pe + 1;
+	  } else if (dst_x < src_x) {
+	    predecessor_table_[src_pe][dst_pe] = dst_pe + 1;
+            predecessor_table_[dst_pe][src_pe] = src_pe - 1;
 	  } else {
-	    predecessor_table_[src_pe][dst_pe] = dst_pe - (direction_y*wsc_x);
-	    predecessor_table_[dst_pe][src_pe] = src_pe + (direction_y*wsc_x);
+	    predecessor_table_[src_pe][dst_pe] = dst_pe - direction_y;
+            predecessor_table_[dst_pe][src_pe] = src_pe + direction_y;
 	  }
+	  dst_pe++;
 	}
       }
 
       /* Next: host-to-PEs */
       dst_pe = src_pe;
-      long int dst_y = src_y;
-      long int dst_x = src_x;
+      unsigned dst_y = src_y;
+      unsigned dst_x = src_x;
       perim_dists[0] = dst_y;
       perim_dists[1] = wsc_y-dst_y-1;
       perim_dists[2] = dst_x;
       perim_dists[3] = wsc_x-dst_x-1;
-
+      predecessor_table_[dst_pe][host1_id] = io_router_id;
+      
       // Different routings depending on distance from the perimeters
       if (perim_dists[0]<=perim_dists[1] && perim_dists[0]<=perim_dists[2] && perim_dists[0]<=perim_dists[3]) {
         // N
-        predecessor_table_[host1_id][dst_pe] = dst_y==0 ? io_router_id : dst_pe - wsc_x;
-        predecessor_table_[dst_pe][host1_id] = io_router_id;
-        predecessor_table_[io_router_id][dst_pe] = dst_y==0 ? io_router_id : dst_pe - wsc_x;
-        predecessor_table_[dst_pe][io_router_id] = dst_y==0 ? dst_pe : dst_x+1; //dst_pe % wsc_x; // row-0, same column                                                                       
+	if (dst_y==0) {temp1 = io_router_id; temp2 = dst_pe;}
+	else {temp1 = dst_pe - wsc_x; temp2 = dst_x+1;}
+        predecessor_table_[host1_id][dst_pe] = temp1;
+        predecessor_table_[io_router_id][dst_pe] = temp1;
+        predecessor_table_[dst_pe][io_router_id] = temp2;
       } else if (perim_dists[1]<=perim_dists[0] && perim_dists[1]<=perim_dists[2] && perim_dists[1]<=perim_dists[3]) {
         // S
-        predecessor_table_[host1_id][dst_pe] = dst_y==wsc_y-1 ? io_router_id : dst_pe + wsc_x;
-        predecessor_table_[dst_pe][host1_id] = io_router_id;
-        predecessor_table_[io_router_id][dst_pe] = dst_y==wsc_y-1 ? io_router_id : dst_pe + wsc_x;
-        predecessor_table_[dst_pe][io_router_id] = dst_y==wsc_y-1 ? dst_pe : table_size-2 - wsc_x + dst_x+1;
+	if (dst_y==wsc_y-1) {temp1 = io_router_id; temp2 = dst_pe;}
+	else {temp1 = dst_pe + wsc_x; temp2 = table_size-2 - wsc_x + dst_x+1;}
+        predecessor_table_[host1_id][dst_pe] = temp1;
+        predecessor_table_[io_router_id][dst_pe] = temp1;
+        predecessor_table_[dst_pe][io_router_id] = temp2;
       } else if (perim_dists[2]<=perim_dists[0] && perim_dists[2]<=perim_dists[1] && perim_dists[2]<=perim_dists[3]) {
         // W
-        predecessor_table_[host1_id][dst_pe] = dst_x==0 ? io_router_id : dst_pe - 1;
-        predecessor_table_[dst_pe][host1_id] = io_router_id;
-        predecessor_table_[io_router_id][dst_pe] = dst_x==0 ? io_router_id : dst_pe - 1;
-        predecessor_table_[dst_pe][io_router_id] = dst_x==0 ? dst_pe : dst_y*wsc_x+1;
+	if (dst_x==0) {temp1 = io_router_id; temp2 = dst_pe;}
+	//else {temp1 = dst_pe - 1; temp2 = dst_y*wsc_x+1;}
+	else {temp1 = dst_pe - 1; temp2 = dst_pe-dst_x+1;}
+        predecessor_table_[host1_id][dst_pe] = temp1;
+        predecessor_table_[io_router_id][dst_pe] = temp1;
+        predecessor_table_[dst_pe][io_router_id] = temp2;
       } else {
         // E
-        predecessor_table_[host1_id][dst_pe] = dst_x==wsc_x-1 ? io_router_id : dst_pe + 1;
-        predecessor_table_[dst_pe][host1_id] = io_router_id;
-        predecessor_table_[io_router_id][dst_pe] = dst_x==wsc_x-1 ? io_router_id : dst_pe + 1;
-        predecessor_table_[dst_pe][io_router_id] = dst_x==wsc_x-1 ? dst_pe : dst_y*wsc_x + wsc_x;
+	if (dst_x==wsc_x-1) {temp1 = io_router_id; temp2 = dst_pe;}
+	//else {temp1 = dst_pe + 1; temp2 = dst_y*wsc_x + wsc_x;}
+	else {temp1 = dst_pe + 1; temp2 = dst_pe-dst_x + wsc_x;}
+        predecessor_table_[host1_id][dst_pe] = temp1;
+        predecessor_table_[io_router_id][dst_pe] = temp1;
+        predecessor_table_[dst_pe][io_router_id] = temp2;
       }
+      src_pe++;
     }
+  }
+
+  std::cout << "Seal complete. Printing results" << std::endl;
+  for (unsigned src = 0; src < table_size; src++) {
+    std::cout << "src-" << src << ": ";
+    for (unsigned dst = 0; dst < table_size; dst++) {
+      std::cout << predecessor_table_[src][dst] << " ";
+    }
+    std::cout << std::endl;
   }
 
 } // do_seal()
