@@ -6,7 +6,7 @@
 #include <simgrid/kernel/routing/FloydZone.hpp>
 #include <simgrid/kernel/routing/NetPoint.hpp>
 #include <xbt/string.hpp>
-
+//#include <iostream>
 #include "src/kernel/resource/NetworkModel.hpp"
 
 #include <climits>

@@ -6,9 +6,7 @@
 #include <simgrid/kernel/routing/WSCZone.hpp>
 #include <simgrid/kernel/routing/NetPoint.hpp>
 #include <xbt/string.hpp>
-#include <iostream>
-//#include <boost/stacktrace.hpp>
-//#include "src/kernel/resource/StandardLinkImpl.hpp"
+//#include <iostream>
 #include "src/kernel/resource/NetworkModel.hpp"
 //#include <omp.h> // speed up the seal() function
 
@@ -137,7 +135,7 @@ void WSCZone::do_seal()
   if(!dimensions_inferred) {
     wsc_x = contiguous_x;
     wsc_y = (table_size-2) / wsc_x;
-    std::cout << "Inferred wafer dims " << wsc_x << "x" << wsc_y << std::endl;
+    //std::cout << "Inferred wafer dims " << wsc_x << "x" << wsc_y << std::endl;
     dimensions_inferred = true;
   }
 
@@ -152,7 +150,7 @@ void WSCZone::do_seal()
       }
     }
   }
-  
+
   unsigned host1_id = 0;
   unsigned io_router_id = table_size-1;
   unsigned perim_dists[4] = {0}; // used to find which perimeter is closest to dst_pe. Format: [N,S,W,E]
@@ -173,7 +171,6 @@ void WSCZone::do_seal()
 	if (dst_y > src_y) direction_y = wsc_x;
 	else direction_y = -wsc_x;
 	for (unsigned dst_x = (dst_y==src_y ? src_x+1 : 0); dst_x < wsc_x; dst_x++) { // +2 since +1 already routed
-
 	  if (dst_x > src_x) {
 	    predecessor_table_[src_pe][dst_pe] = dst_pe - 1;
             predecessor_table_[dst_pe][src_pe] = src_pe + 1;
@@ -216,31 +213,20 @@ void WSCZone::do_seal()
       } else if (perim_dists[2]<=perim_dists[0] && perim_dists[2]<=perim_dists[1] && perim_dists[2]<=perim_dists[3]) {
         // W
 	if (dst_x==0) {temp1 = io_router_id; temp2 = dst_pe;}
-	//else {temp1 = dst_pe - 1; temp2 = dst_y*wsc_x+1;}
-	else {temp1 = dst_pe - 1; temp2 = dst_pe-dst_x+1;}
+	else {temp1 = dst_pe - 1; temp2 = dst_pe-dst_x;}
         predecessor_table_[host1_id][dst_pe] = temp1;
         predecessor_table_[io_router_id][dst_pe] = temp1;
         predecessor_table_[dst_pe][io_router_id] = temp2;
       } else {
         // E
 	if (dst_x==wsc_x-1) {temp1 = io_router_id; temp2 = dst_pe;}
-	//else {temp1 = dst_pe + 1; temp2 = dst_y*wsc_x + wsc_x;}
-	else {temp1 = dst_pe + 1; temp2 = dst_pe-dst_x + wsc_x;}
+	else {temp1 = dst_pe + 1; temp2 = dst_pe-dst_x + wsc_x-1;}
         predecessor_table_[host1_id][dst_pe] = temp1;
         predecessor_table_[io_router_id][dst_pe] = temp1;
         predecessor_table_[dst_pe][io_router_id] = temp2;
       }
       src_pe++;
     }
-  }
-
-  std::cout << "Seal complete. Printing results" << std::endl;
-  for (unsigned src = 0; src < table_size; src++) {
-    std::cout << "src-" << src << ": ";
-    for (unsigned dst = 0; dst < table_size; dst++) {
-      std::cout << predecessor_table_[src][dst] << " ";
-    }
-    std::cout << std::endl;
   }
 
 } // do_seal()
