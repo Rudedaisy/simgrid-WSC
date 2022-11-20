@@ -156,39 +156,40 @@ void WSCZone::do_seal()
   unsigned perim_dists[4] = {0}; // used to find which perimeter is closest to dst_pe. Format: [N,S,W,E]
   unsigned src_pe = 1;
   unsigned dst_pe;
-  unsigned temp1;
-  unsigned temp2;
   /* Connect all nodes via predecessor_table_ */
   /* Special nodes: 0=host1, table_size-1=io_router */
+  /* First: internal nodes */
   int direction_y = wsc_x;
   predecessor_table_[0][io_router_id] = 0;
   //#pragma omp parallel for collapse(2) num_threads(OPENMP_THREADS) shared(predecessor_table_) private(src_pe,dst_pe,direction_x,direction_y,perim_dists)
   for (unsigned src_y = 0; src_y < wsc_y; src_y++) {
     for (unsigned src_x = 0; src_x < wsc_x; src_x++) {
-      dst_pe = src_pe + 1;
-      /* First: internal nodes */
-      for (unsigned dst_y = src_y; dst_y < wsc_y; dst_y++) {
+      dst_pe = 1;
+      for (unsigned dst_y = 0; dst_y < wsc_y; dst_y++) {
 	if (dst_y > src_y) direction_y = wsc_x;
 	else direction_y = -wsc_x;
-	for (unsigned dst_x = (dst_y==src_y ? src_x+1 : 0); dst_x < wsc_x; dst_x++) { // +2 since +1 already routed
+	for (unsigned dst_x = 0; dst_x < wsc_x; dst_x++) {
+	  if (dst_pe==src_pe) {dst_pe++; continue;}
 	  if (dst_x > src_x) {
 	    predecessor_table_[src_pe][dst_pe] = dst_pe - 1;
-            predecessor_table_[dst_pe][src_pe] = src_pe + 1;
 	  } else if (dst_x < src_x) {
 	    predecessor_table_[src_pe][dst_pe] = dst_pe + 1;
-            predecessor_table_[dst_pe][src_pe] = src_pe - 1;
 	  } else {
 	    predecessor_table_[src_pe][dst_pe] = dst_pe - direction_y;
-            predecessor_table_[dst_pe][src_pe] = src_pe + direction_y;
 	  }
 	  dst_pe++;
 	}
       }
+      src_pe++;
+    }
+  }
 
-      /* Next: host-to-PEs */
-      dst_pe = src_pe;
-      unsigned dst_y = src_y;
-      unsigned dst_x = src_x;
+  unsigned temp1;
+  unsigned temp2;
+  dst_pe = 1;
+  /* Next: host-to-PEs */
+  for (unsigned dst_y = 0; dst_y < wsc_y; dst_y++) {
+    for (unsigned dst_x = 0; dst_x < wsc_x; dst_x++) {
       perim_dists[0] = dst_y;
       perim_dists[1] = wsc_y-dst_y-1;
       perim_dists[2] = dst_x;
@@ -225,10 +226,18 @@ void WSCZone::do_seal()
         predecessor_table_[io_router_id][dst_pe] = temp1;
         predecessor_table_[dst_pe][io_router_id] = temp2;
       }
-      src_pe++;
+      dst_pe++;
     }
   }
-
+  /*
+  for (unsigned int src = 0; src < table_size; src++) {
+    std::cout << "src-" << src << ": ";
+    for (unsigned int dst = 0; dst < table_size; dst++) {
+      std::cout << predecessor_table_[src][dst] << " ";
+    }
+    std::cout << std::endl;
+  }
+  */
 } // do_seal()
 } // namespace routing
 } // namespace kernel
