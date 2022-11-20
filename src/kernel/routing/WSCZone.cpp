@@ -159,19 +159,16 @@ void WSCZone::do_seal()
   /* Connect all nodes via predecessor_table_ */
   /* Special nodes: 0=host1, table_size-1=io_router */
   /* First: internal nodes */
-  int direction_y = wsc_x;
   predecessor_table_[0][io_router_id] = 0;
-#pragma omp parallel for collapse(2) num_threads(OPENMP_THREADS) shared(predecessor_table_) private(src_pe,dst_pe,direction_y)
+#pragma omp parallel for collapse(4) num_threads(OPENMP_THREADS) shared(predecessor_table_) private(src_pe,dst_pe)
   for (unsigned src_y = 0; src_y < wsc_y; src_y++) {
     for (unsigned src_x = 0; src_x < wsc_x; src_x++) {
-      src_pe = src_y*wsc_x + src_x+1;
-      predecessor_table_[src_pe][host1_id] = io_router_id;
-      dst_pe = 1;
       for (unsigned dst_y = 0; dst_y < wsc_y; dst_y++) {
-	if (dst_y > src_y) direction_y = wsc_x;
-	else direction_y = -wsc_x;
 	for (unsigned dst_x = 0; dst_x < wsc_x; dst_x++) {
-	  if (dst_pe==src_pe) {dst_pe++; continue;}
+	  src_pe = src_y*wsc_x + src_x+1;
+	  dst_pe = dst_y*wsc_x + dst_x+1;
+	  if (dst_x==0 && dst_y==0) predecessor_table_[src_pe][host1_id] = io_router_id;
+	  if (dst_pe==src_pe) {continue;}
 	  if (dst_x > src_x) {
 	    predecessor_table_[src_pe][dst_pe] = dst_pe - 1;
 	  } else if (dst_x < src_x) {
@@ -180,7 +177,6 @@ void WSCZone::do_seal()
 	    if (dst_y > src_y) predecessor_table_[src_pe][dst_pe] = dst_pe - wsc_x;
 	    else predecessor_table_[src_pe][dst_pe] = dst_pe + wsc_x;
 	  }
-	  dst_pe++;
 	}
       }
 

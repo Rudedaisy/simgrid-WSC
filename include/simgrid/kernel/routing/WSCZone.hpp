@@ -8,7 +8,7 @@
 
 #include <simgrid/kernel/routing/RoutedZone.hpp>
 
-#define OPENMP_THREADS 32
+#define OPENMP_THREADS 16
 
 namespace simgrid {
 namespace kernel {
