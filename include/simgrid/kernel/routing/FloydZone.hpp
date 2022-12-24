@@ -7,6 +7,12 @@
 #define SURF_ROUTING_FLOYD_HPP_
 
 #include <simgrid/kernel/routing/RoutedZone.hpp>
+#include <fstream>
+// include headers that implement a archive in simple text format
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/unique_ptr.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 namespace simgrid {
 namespace kernel {
@@ -22,6 +28,18 @@ namespace routing {
  *  (somewhere between the one of @{DijkstraZone} and the one of @{FullZone}).
  */
 class XBT_PRIVATE FloydZone : public RoutedZone {
+  /* members for serialization of tables */
+  friend class boost::serialization::access;
+  // When the class Archive corresponds to an output archive, the
+  // & operator is defined similar to <<.  Likewise, when the class Archive
+  // is a type of input archive the & operator is defined similar to >>.
+  template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+    ar & predecessor_table_;
+    ar & cost_table_;
+    //ar & link_table_;
+  }
+  
   /* vars to compute the Floyd algorithm. */
   std::vector<std::vector<long>> predecessor_table_;
   std::vector<std::vector<unsigned long>> cost_table_;

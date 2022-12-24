@@ -6,7 +6,6 @@
 #include <simgrid/kernel/routing/FloydZone.hpp>
 #include <simgrid/kernel/routing/NetPoint.hpp>
 #include <xbt/string.hpp>
-//#include <iostream>
 #include "src/kernel/resource/NetworkModel.hpp"
 
 #include <climits>
@@ -124,6 +123,14 @@ void FloydZone::add_route(NetPoint* src, NetPoint* dst, NetPoint* gw_src, NetPoi
 
 void FloydZone::do_seal()
 {
+  /* Load checkpoint if exists, then skip executing this function */
+  std::ifstream ifs("FloydRoutingCheckpoint.txt", std::ios::binary);
+  if(ifs.good()) {
+    boost::archive::text_iarchive ia(ifs);
+    ia >> *this;
+    return;
+  }
+  
   /* set the size of table routing */
   unsigned int table_size = get_table_size();
   init_tables(table_size);
@@ -152,6 +159,12 @@ void FloydZone::do_seal()
       }
     }
   }
+
+  /* Save checkpoint to skip this step next time */
+  std::ofstream ofs("FloydRoutingCheckpoint.txt");
+  boost::archive::text_oarchive oa(ofs);
+  oa << *this;
+  
 }
 } // namespace kernel::routing
 

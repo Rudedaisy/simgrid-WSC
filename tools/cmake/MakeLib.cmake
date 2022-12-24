@@ -76,6 +76,10 @@ if (HAVE_BOOST_ADDR2LINE_BACKTRACE)
   target_link_libraries(simgrid ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
 endif()
 
+if (HAVE_BOOST_SERIALIZATION)
+  target_link_libraries(simgrid ${Boost_SERIALIZATION_LIBRARY})
+endif()
+
 if(CMAKE_USE_PTHREADS_INIT)
   target_link_libraries(simgrid ${CMAKE_THREAD_LIBS_INIT})
 endif()
