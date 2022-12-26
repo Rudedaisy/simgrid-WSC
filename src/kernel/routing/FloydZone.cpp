@@ -7,6 +7,7 @@
 #include <simgrid/kernel/routing/NetPoint.hpp>
 #include <xbt/string.hpp>
 #include "src/kernel/resource/NetworkModel.hpp"
+#include <iostream>
 
 #include <climits>
 
@@ -130,6 +131,8 @@ void FloydZone::do_seal()
     ia >> *this;
     return;
   }
+
+  std::cout << "Routing Checkpoint not found! Generating now." << std::endl;
   
   /* set the size of table routing */
   unsigned int table_size = get_table_size();
