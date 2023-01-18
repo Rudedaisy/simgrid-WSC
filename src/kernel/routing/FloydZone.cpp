@@ -137,6 +137,8 @@ void FloydZone::do_seal()
   /* set the size of table routing */
   unsigned int table_size = get_table_size();
   init_tables(table_size);
+  unsigned host_id = 0;
+  unsigned io_router_id = table_size-1;
 
   /* Add the loopback if needed */
   if (get_network_model()->loopback_ && get_hierarchy() == RoutingMode::base) {
@@ -156,12 +158,25 @@ void FloydZone::do_seal()
       for (unsigned int b = 0; b < table_size; b++) {
         if (cost_table_[a][c] < ULONG_MAX && cost_table_[c][b] < ULONG_MAX &&
             (cost_table_[a][b] == ULONG_MAX || (cost_table_[a][c] + cost_table_[c][b] < cost_table_[a][b]))) {
+	  // Prevent pe-to-pe comm from taking the path through io_router
+	  if(c == io_router_id && a != host_id && b != host_id && a != io_router_id && b != io_router_id) continue;
           cost_table_[a][b]        = cost_table_[a][c] + cost_table_[c][b];
           predecessor_table_[a][b] = predecessor_table_[c][b];
         }
       }
     }
   }
+
+  /*
+  for (unsigned int src = 0; src < table_size; src++) {
+    std::cout << "src-" << src << ": ";
+    for (unsigned int dst = 0; dst < table_size; dst++) {
+      std::cout << predecessor_table_[src][dst] << " ";
+    }
+    std::cout << std::endl;
+  }
+  exit(0);
+  //*/
 
   /* Save checkpoint to skip this step next time */
   std::ofstream ofs("FloydRoutingCheckpoint.txt");
