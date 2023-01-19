@@ -156,10 +156,10 @@ void FloydZone::do_seal()
   for (unsigned int c = 0; c < table_size; c++) {
     for (unsigned int a = 0; a < table_size; a++) {
       for (unsigned int b = 0; b < table_size; b++) {
+	// Prevent pe-to-pe comm from taking the path through io_router
+	if(c == io_router_id && a != host_id && b != host_id && a != io_router_id && b != io_router_id) continue;
         if (cost_table_[a][c] < ULONG_MAX && cost_table_[c][b] < ULONG_MAX &&
             (cost_table_[a][b] == ULONG_MAX || (cost_table_[a][c] + cost_table_[c][b] < cost_table_[a][b]))) {
-	  // Prevent pe-to-pe comm from taking the path through io_router
-	  if(c == io_router_id && a != host_id && b != host_id && a != io_router_id && b != io_router_id) continue;
           cost_table_[a][b]        = cost_table_[a][c] + cost_table_[c][b];
           predecessor_table_[a][b] = predecessor_table_[c][b];
         }
