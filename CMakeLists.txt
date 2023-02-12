@@ -271,6 +271,35 @@ if(enable_smpi_papi)
   endif()
 endif()
 
+
+# ========== Added library for routing optimizations =============
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
+option(PGO_PROFILE "PGO_PROFILE" OFF)
+option(PGO_OPT "PGO_OPT" OFF)
+if (PGO_PROFILE)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fprofile-dir=/tmp/data/pgo -fprofile-generate=/tmp/data/pgo")
+endif()
+
+if (PGO_OPT)
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fprofile-dir=/tmp/data/pgo -fprofile-use=/tmp/data/pgo -fprofile-correction")
+endif()
+
+option(COMPRESS_CKPT "COMPRESS_CKPT" ON)
+if (COMPRESS_CKPT)
+  add_compile_definitions(_COMPRESS)
+  set(ZLIB_FOUND OFF)
+  set(BZIP2_FOUND OFF)
+  set(ZSTD_FOUND OFF)
+  add_subdirectory(tools/bxzstr)
+  include_directories(tools/bxzstr/include)
+endif()
+
 # But we do need the core of Boost
 # cmake before 3.13.1 does not know about stacktrace components. Fix it.
 # Usable components: https://www.boost.org/doc/libs/1_65_1/doc/html/stacktrace/configuration_and_build.html
