@@ -325,11 +325,8 @@ void FloydZone::do_seal()
                sizeof(unsigned long) * table_size);
     }
 
-    // free(_ct);
-    // free(_pret);
-    // free(_ct_o);
-    // free(_pret_o);
-
+    free(_ct);
+    free(_pret);
     // /* Calculate path costs */
     // for (unsigned int c = 0; c < table_size; c++)
     // {
