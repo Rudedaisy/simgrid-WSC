@@ -28,6 +28,7 @@ lib/
 .project
 .pydevproject
 .vscode/
+.cache/
 
 ### cmake
 CTestCustom.cmake

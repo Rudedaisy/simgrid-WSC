@@ -290,6 +290,12 @@ if (PGO_OPT)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fprofile-dir=/tmp/data/pgo -fprofile-use=/tmp/data/pgo -fprofile-correction")
 endif()
 
+# RocksDB
+
+include(FindRocksdb)
+include_directories(${ROCKSDB_INCLUDE_DIRS})
+set(SIMGRID_DEP "${SIMGRID_DEP} -lrocksdb -llz4")
+
 option(COMPRESS_CKPT "COMPRESS_CKPT" ON)
 if (COMPRESS_CKPT)
   add_compile_definitions(_COMPRESS)

@@ -84,6 +84,8 @@ if(CMAKE_USE_PTHREADS_INIT)
   target_link_libraries(simgrid ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+target_link_libraries(simgrid ${ROKSDB_LIBRARIES})
+
 if(HAVE_PAPI)
   SET(SIMGRID_DEP "${SIMGRID_DEP} -lpapi")
 endif()

@@ -6,6 +6,8 @@
 #ifndef SURF_ROUTING_WSC_HPP_
 #define SURF_ROUTING_WSC_HPP_
 
+#include <cstdint>
+#include <rocksdb/db.h>
 #include <simgrid/kernel/routing/RoutedZone.hpp>
 
 #define OPENMP_THREADS 16
@@ -22,26 +24,37 @@ namespace routing {
  *  This result in rather small platform file, slow initialization time,  and intermediate memory requirements
  *  (somewhere between the one of @{FloydZone} and the one of @{FullZone}).
  */
+
 class XBT_PRIVATE WSCZone : public RoutedZone {
+
+  using COST_T = uint64_t; // Cost Table Type
+  using PRED_T = int64_t;  // Predecessor Table Type
+
   /* vars to compute the WSC algorithm. */
-  std::vector<std::vector<long>> predecessor_table_;
+  std::vector<COST_T> cost_table_;
+  std::vector<PRED_T> predecessor_table_;
   std::vector<std::vector<std::unique_ptr<Route>>> link_table_;
-  unsigned contiguous_x = 1; // First PE has ID of 1 due to host claiming ID 0
-  unsigned wsc_x = 0;
-  unsigned wsc_y = 0;
-  bool dimensions_inferred = false;
 
   void init_tables(unsigned int table_size);
   void do_seal() override;
 
 public:
   using RoutedZone::RoutedZone;
-  WSCZone(const WSCZone&) = delete;
+  WSCZone(const WSCZone&)            = delete;
   WSCZone& operator=(const WSCZone&) = delete;
 
   void get_local_route(const NetPoint* src, const NetPoint* dst, Route* into, double* latency) override;
   void add_route(NetPoint* src, NetPoint* dst, NetPoint* gw_src, NetPoint* gw_dst,
                  const std::vector<s4u::LinkInRoute>& link_list, bool symmetrical) override;
+
+private:
+  rocksdb::DB* ckpt_db{nullptr}; // Database to store checkpoint
+  uint64_t table_size{0};
+  uint64_t blocked_table_size{0};
+
+  bool init_ckpt_db(const char* db_path);
+  void floyd_warshall_blocked(const int ori_n, const int n, const int b, const int io_router_id, const int host_id);
+  uint64_t floyd_warshall_blocked_init(const int n, const int block_size);
 };
 } // namespace routing
 } // namespace kernel
