@@ -143,10 +143,16 @@ bool WSCZone::init_ckpt_db(const char* db_path)
   // Using 16 threads by default
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
-  options.create_if_missing = true;
+  options.create_if_missing = false;
   options.compression       = ROCKSDB_NAMESPACE::kLZ4Compression;
 
-  rocksdb::Status s = rocksdb::DB::Open(options, db_path, &ckpt_db);
+  rocksdb::Status s;
+  s = rocksdb::DB::OpenForReadOnly(options, db_path, &ckpt_db);
+  if(!s.ok() || !ckpt_db) {
+    // Open without read-only mode
+    options.create_if_missing = true;
+    s = rocksdb::DB::Open(options, db_path, &ckpt_db);
+  }
   xbt_assert(s.ok(), "Failed to open or create checkpoint database: %s", db_path);
 
   std::string has_routing_data;
